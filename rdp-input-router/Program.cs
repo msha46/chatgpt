@@ -244,9 +244,9 @@ internal sealed class RouterForm : Form
             {
                 ki = new KEYBDINPUT
                 {
-                    wVk = raw.keyboard.VKey,
+                    wVk = 0,
                     wScan = raw.keyboard.MakeCode,
-                    dwFlags = raw.keyboard.Flags.HasFlag(RawKeyboardFlags.Break) ? KEYEVENTF.KEYUP : 0
+                    dwFlags = BuildKeyboardFlags(raw.keyboard.Flags)
                 }
             }
         };
@@ -275,7 +275,7 @@ internal sealed class RouterForm : Form
                     dx = raw.mouse.lLastX,
                     dy = raw.mouse.lLastY,
                     mouseData = raw.mouse.usButtonData,
-                    dwFlags = MapMouseFlags(mouseFlags)
+                    dwFlags = MapMouseFlags(mouseFlags, raw.mouse.lLastX, raw.mouse.lLastY)
                 }
             }
         };
@@ -283,7 +283,7 @@ internal sealed class RouterForm : Form
         SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
     }
 
-    private static MOUSEEVENTF MapMouseFlags(ushort flags)
+    private static MOUSEEVENTF MapMouseFlags(ushort flags, int deltaX, int deltaY)
     {
         MOUSEEVENTF result = 0;
         if ((flags & RawMouseButtons.LeftDown) != 0) result |= MOUSEEVENTF.LEFTDOWN;
@@ -294,6 +294,23 @@ internal sealed class RouterForm : Form
         if ((flags & RawMouseButtons.MiddleUp) != 0) result |= MOUSEEVENTF.MIDDLEUP;
         if ((flags & RawMouseButtons.MouseWheel) != 0) result |= MOUSEEVENTF.WHEEL;
         if ((flags & RawMouseButtons.MouseHWheel) != 0) result |= MOUSEEVENTF.HWHEEL;
+        if (deltaX != 0 || deltaY != 0) result |= MOUSEEVENTF.MOVE;
+        return result;
+    }
+
+    private static KEYEVENTF BuildKeyboardFlags(RawKeyboardFlags flags)
+    {
+        var result = KEYEVENTF.SCANCODE;
+        if (flags.HasFlag(RawKeyboardFlags.Break))
+        {
+            result |= KEYEVENTF.KEYUP;
+        }
+
+        if (flags.HasFlag(RawKeyboardFlags.Extended))
+        {
+            result |= KEYEVENTF.EXTENDEDKEY;
+        }
+
         return result;
     }
 
@@ -487,7 +504,9 @@ internal sealed class RouterForm : Form
     [Flags]
     private enum KEYEVENTF : uint
     {
-        KEYUP = 0x0002
+        EXTENDEDKEY = 0x0001,
+        KEYUP = 0x0002,
+        SCANCODE = 0x0008
     }
 
     [DllImport("user32.dll")]

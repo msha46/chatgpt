@@ -9,6 +9,8 @@ This is a **prototype** Windows desktop app that lets you pick one keyboard and 
 - Windows 11 22H2
 - .NET 6 Desktop Runtime / SDK
 
+If you see an error like `No .NET SDKs were found`, install the .NET 6 SDK from https://aka.ms/dotnet/download and reopen your terminal so `dotnet --info` works.
+
 ## Build
 
 ```powershell
